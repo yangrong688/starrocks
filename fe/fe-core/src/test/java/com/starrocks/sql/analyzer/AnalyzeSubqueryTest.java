@@ -39,7 +39,17 @@ public class AnalyzeSubqueryTest {
                 "select v1 from t0 where v2 in (select v4 from t1 where v3 = v5) or v2 = (select v4 from t1 where v3 = v5)");
         analyzeFail("select v1 from t0 order by (select v4 from t1)", "ORDER BY clause cannot contain subquery");
     }
-
+    
+    @Test
+    public void testSubqueryLimit() {
+        analyzeSuccess("(((select * from t0)))");
+        analyzeSuccess("(select * from t0) limit 1");
+        analyzeSuccess("(select v1 from t0) order by v1 desc limit 1");
+        analyzeSuccess("((select v1 from t0) order by v1 desc limit 1) order by v1");
+        analyzeSuccess("((select v1 from t0) order by v1 desc limit 1) limit 2");
+        analyzeFail("(select v1 from t0) order by err desc limit 1", "Column 'err' cannot be resolved");
+    }
+    
     @Test
     public void testInPredicate() {
         analyzeSuccess("select v1 from t0 where v2 in (select v3 from t1)");

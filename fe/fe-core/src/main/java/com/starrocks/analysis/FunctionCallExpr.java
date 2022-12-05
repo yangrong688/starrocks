@@ -392,7 +392,7 @@ public class FunctionCallExpr extends Expr {
 
             for (Expr child : children) {
                 if (child.type.isPercentile()) {
-                    throw new AnalysisException(Type.OnlyMetricTypeErrorMsg);
+                    throw new AnalysisException(Type.ONLY_METRIC_TYPE_ERROR_MSG);
                 }
             }
             return;
@@ -485,7 +485,7 @@ public class FunctionCallExpr extends Expr {
                 || fnName.getFunction().equalsIgnoreCase(FunctionSet.NDV)
                 || fnName.getFunction().equalsIgnoreCase(FunctionSet.APPROX_COUNT_DISTINCT))
                 && !arg.type.canApplyToNumeric()) {
-            throw new AnalysisException(Type.OnlyMetricTypeErrorMsg);
+            throw new AnalysisException(Type.ONLY_METRIC_TYPE_ERROR_MSG);
         }
 
         if ((fnName.getFunction().equalsIgnoreCase(FunctionSet.BITMAP_UNION_INT) && !arg.type.isIntegerType())) {

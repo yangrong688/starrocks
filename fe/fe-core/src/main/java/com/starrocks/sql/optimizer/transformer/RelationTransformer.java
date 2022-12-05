@@ -311,10 +311,16 @@ public class RelationTransformer extends AstVisitor<LogicalPlan, ExpressionMappi
             throw unsupportedException("New Planner only support Query Statement");
         }
 
-        if (setOperationRelation.hasOrderByClause()) {
+        root = addOrderByLimit(root, setOperationRelation);
+        return new LogicalPlan(root, outputColumns, null);
+    }
+
+    private OptExprBuilder addOrderByLimit(OptExprBuilder root, QueryRelation relation) {
+        List<OrderByElement> orderBy = relation.getOrderBy();
+        if (relation.hasOrderByClause()) {
             List<Ordering> orderings = new ArrayList<>();
             List<ColumnRefOperator> orderByColumns = Lists.newArrayList();
-            for (OrderByElement item : setOperationRelation.getOrderBy()) {
+            for (OrderByElement item : orderBy) {
                 ColumnRefOperator column = (ColumnRefOperator) SqlToScalarOperatorTranslator.translate(item.getExpr(),
                         root.getExpressionMapping());
                 Ordering ordering = new Ordering(column, item.getIsAsc(),
@@ -327,12 +333,12 @@ public class RelationTransformer extends AstVisitor<LogicalPlan, ExpressionMappi
             root = root.withNewRoot(new LogicalTopNOperator(orderings));
         }
 
-        LimitElement limit = setOperationRelation.getLimit();
+        LimitElement limit = relation.getLimit();
         if (limit != null) {
             LogicalLimitOperator limitOperator = LogicalLimitOperator.init(limit.getLimit(), limit.getOffset());
             root = root.withNewRoot(limitOperator);
         }
-        return new LogicalPlan(root, outputColumns, null);
+        return root;
     }
 
     @Override
@@ -510,6 +516,9 @@ public class RelationTransformer extends AstVisitor<LogicalPlan, ExpressionMappi
                 logicalPlan.getRoot().getOp(),
                 logicalPlan.getRootBuilder().getInputs(),
                 new ExpressionMapping(node.getScope(), logicalPlan.getOutputColumn()));
+        
+        builder = addOrderByLimit(builder, node);
+
         return new LogicalPlan(builder, logicalPlan.getOutputColumn(), logicalPlan.getCorrelation());
     }
 

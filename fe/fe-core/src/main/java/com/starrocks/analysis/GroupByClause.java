@@ -215,7 +215,7 @@ public class GroupByClause implements ParseNode {
             }
 
             if (!groupingExpr.type.canGroupBy()) {
-                throw new AnalysisException(Type.OnlyMetricTypeErrorMsg);
+                throw new AnalysisException(Type.ONLY_METRIC_TYPE_ERROR_MSG);
             }
         }
 

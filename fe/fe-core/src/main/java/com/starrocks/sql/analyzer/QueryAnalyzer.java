@@ -369,7 +369,7 @@ public class QueryAnalyzer {
                             joinEqual.getType());
                 }
                 if (joinEqual.contains((Predicate<Expr>) node -> !node.getType().canJoinOn())) {
-                    throw new SemanticException(Type.OnlyMetricTypeErrorMsg);
+                    throw new SemanticException(Type.ONLY_METRIC_TYPE_ERROR_MSG);
                 }
             } else {
                 if (join.getJoinOp().isOuterJoin() || join.getJoinOp().isSemiAntiJoin()) {
@@ -439,7 +439,7 @@ public class QueryAnalyzer {
 
         @Override
         public Scope visitSubquery(SubqueryRelation subquery, Scope context) {
-            if (subquery.getResolveTableName() == null) {
+            if (subquery.getResolveTableName() != null && subquery.getResolveTableName().getTbl() == null) {
                 ErrorReport.reportSemanticException(ErrorCode.ERR_DERIVED_MUST_HAVE_ALIAS);
             }
 
@@ -451,6 +451,31 @@ public class QueryAnalyzer {
                         field.getOriginExpression()));
             }
             Scope scope = new Scope(RelationId.of(subquery), new RelationFields(outputFields.build()));
+
+            if (subquery.hasOrderByClause()) {
+                List<Expr> outputExpressions = subquery.getOutputExpression();
+                for (OrderByElement orderByElement : subquery.getOrderBy()) {
+                    Expr expression = orderByElement.getExpr();
+                    AnalyzerUtils.verifyNoGroupingFunctions(expression, "ORDER BY");
+
+                    if (expression instanceof IntLiteral) {
+                        long ordinal = ((IntLiteral) expression).getLongValue();
+                        if (ordinal < 1 || ordinal > outputExpressions.size()) {
+                            throw new SemanticException("ORDER BY position %s is not in select list", ordinal);
+                        }
+                        expression = new FieldReference((int) ordinal - 1, null);
+                    }
+
+                    analyzeExpression(expression, new AnalyzeState(), scope);
+
+                    if (!expression.getType().canOrderBy()) {
+                        throw new SemanticException(Type.ONLY_METRIC_TYPE_ERROR_MSG);
+                    }
+
+                    orderByElement.setExpr(expression);
+                }
+            }
+
             subquery.setScope(scope);
             return scope;
         }
@@ -566,7 +591,7 @@ public class QueryAnalyzer {
                     analyzeExpression(expression, new AnalyzeState(), setOpOutputScope);
 
                     if (!expression.getType().canOrderBy()) {
-                        throw new SemanticException(Type.OnlyMetricTypeErrorMsg);
+                        throw new SemanticException(Type.ONLY_METRIC_TYPE_ERROR_MSG);
                     }
 
                     orderByElement.setExpr(expression);

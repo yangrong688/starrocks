@@ -458,7 +458,7 @@ public class SelectStmt extends QueryStmt {
         if (sortInfo != null && CollectionUtils.isNotEmpty(sortInfo.getOrderingExprs())) {
             for (Expr expr : sortInfo.getOrderingExprs()) {
                 if (!expr.getType().canOrderBy()) {
-                    throw new AnalysisException(Type.OnlyMetricTypeErrorMsg);
+                    throw new AnalysisException(Type.ONLY_METRIC_TYPE_ERROR_MSG);
                 }
             }
 
