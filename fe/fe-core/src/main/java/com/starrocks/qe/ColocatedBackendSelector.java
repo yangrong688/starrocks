@@ -14,6 +14,7 @@
 
 package com.starrocks.qe;
 
+import com.google.api.client.util.Preconditions;
 import com.google.api.client.util.Sets;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
@@ -184,7 +185,10 @@ public class ColocatedBackendSelector implements BackendSelector {
             if (scanNode.getSelectedPartitionIds().size() <= 1) {
                 for (Long pid : scanNode.getSelectedPartitionIds()) {
                     curBucketNum = scanNode.getOlapTable().getPartition(pid).getDistributionInfo().getBucketNum();
+                    Preconditions.checkState(curBucketNum != 0, "scan node:" + scanNode.getOlapTable().getName() + " pid:" + pid);
                 }
+                Preconditions.checkState(!(curBucketNum == 0 && scanNode.getSelectedPartitionIds().isEmpty()), "scan node:"
+                        + scanNode.getOlapTable().getName());
             }
             this.bucketNum = curBucketNum;
         }
