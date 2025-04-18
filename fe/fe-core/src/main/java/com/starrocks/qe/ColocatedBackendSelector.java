@@ -185,12 +185,10 @@ public class ColocatedBackendSelector implements BackendSelector {
             if (scanNode.getSelectedPartitionIds().size() <= 1) {
                 for (Long pid : scanNode.getSelectedPartitionIds()) {
                     curBucketNum = scanNode.getOlapTable().getPartition(pid).getDistributionInfo().getBucketNum();
-                    Preconditions.checkState(curBucketNum != 0, "scan node:" + scanNode.getOlapTable().getName() + " pid:" + pid);
                 }
-                Preconditions.checkState(!(curBucketNum == 0 && scanNode.getSelectedPartitionIds().isEmpty()), "scan node:"
-                        + scanNode.getOlapTable().getName());
             }
             this.bucketNum = curBucketNum;
+            Preconditions.checkState(this.bucketNum != 0, "distribution=" + scanNode.getOlapTable().getDefaultDistributionInfo());
         }
 
         public Map<Integer, Long> getSeqToWorkerId() {
