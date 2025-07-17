@@ -2033,8 +2033,8 @@ public class StmtExecutor {
             long longId = Long.parseLong(prepareStmt.getName());
             // Check if it's within 4-byte range (MySQL protocol limitation)
             if (longId > 0xFFFFFFFFL || longId < 0) {
-                LOG.warn("Statement ID out of range: {}, using hashcode instead", longId);
                 stmtId = prepareStmt.getName().hashCode() & 0x7FFFFFFF; // Ensure positive value
+                LOG.warn("Statement ID out of range: {}, using hashcode {} instead", longId, stmtId);
             } else {
                 stmtId = (int) longId;
             }
@@ -2086,6 +2086,24 @@ public class StmtExecutor {
 
         context.getMysqlChannel().flush();
         context.getState().setStateType(MysqlStateType.NOOP);
+
+        // ---------------------------------------------------------------------
+        // Ensure that the statement can be looked up later with the statement
+        // id that we are about to send back to the client.  The lookup during
+        // COM_STMT_EXECUTE is performed by using the numeric id (converted to
+        // a string) as the key (see ConnectProcessor#handleExecute).  If the
+        // key we previously used when registering the prepared statement
+        // differs from the id we are sending now, we register an additional
+        // entry using the numeric id so that the execution phase can mi
+        // it successfully.
+        // ---------------------------------------------------------------------
+        String stmtIdKey = String.valueOf(stmtId);
+        if (context.getPreparedStmt(stmtIdKey) == null) {
+            PrepareStmtContext existingCtx = context.getPreparedStmt(prepareStmt.getName());
+            if (existingCtx != null) {
+                context.putPreparedStmt(stmtIdKey, existingCtx);
+            }
+        }
     }
 
     public void setQueryStatistics(PQueryStatistics statistics) {
