@@ -382,6 +382,12 @@ public class OlapTableFactory implements AbstractTableFactory {
                             "when ComputeNode without storage_path, nodeId:" + cnUnSetStoragePath);
                 }
                 table.setPersistentIndexType(persistentIndexType);
+            } else {
+                // Ignore leftover persistent_index_type on non-applicable tables (e.g., UNIQUE KEY or shared-nothing),
+                // to prevent "Unknown properties" during CREATE TABLE.
+                if (properties != null) {
+                    properties.remove(PropertyAnalyzer.PROPERTIES_PERSISTENT_INDEX_TYPE);
+                }
             }
 
             if (table.isCloudNativeTable()) {
