@@ -3475,6 +3475,12 @@ public class OlapTable extends Table {
         // unique properties
         properties.putAll(getUniqueProperties());
 
+        // persistent_index_type 仅适用于云原生主键表，
+        // 对于 UNIQUE KEY 或其他非主键模型不应在 SHOW CREATE TABLE 中展示。
+        if (getKeysType() != KeysType.PRIMARY_KEYS) {
+            properties.remove(PropertyAnalyzer.PROPERTIES_PERSISTENT_INDEX_TYPE);
+        }
+
         return properties;
     }
 
